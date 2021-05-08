@@ -1,11 +1,13 @@
-from Strategy_Analysis import RunAnalysis
-from get_sp500_tickers import get_sp500
-import numpy as np
-import math
 import os
 
+import numpy as np
+import math
 
-def run(ma_len):
+from Strategy_Analysis import RunAnalysis
+from get_sp500_tickers import get_sp500
+
+
+def run_optimization(ma_len):
     year = 2020
     tickers = os.listdir(
         '../../Data_Store/Russell_OHLCV_Data/{}/'.format(year))  # If you're pulling tickers for Russell
@@ -21,7 +23,7 @@ def run(ma_len):
     return exp_val
 
 
-def de(fobj, bounds, mut=0.8, crossp=0.7, popsize=20, its=1000):
+def diff_evolution(fobj, bounds, mut=0.8, crossp=0.7, popsize=20, its=1000):
     dimensions = len(bounds)
     pop = np.random.rand(popsize, dimensions)
     min_b, max_b = np.asarray(bounds).T
@@ -50,10 +52,10 @@ def de(fobj, bounds, mut=0.8, crossp=0.7, popsize=20, its=1000):
         yield best, fitness[best_idx]
 
 
-def max_func(params):
-    return -1*run(params[0])
+def maximize(params):
+    return -1*run_optimization(params[0])
 
 
-result = list(de(max_func, [(1, 30)], popsize=10, its=50))
+result = list(diff_evolution(maximize, [(1, 30)], popsize=10, its=50))
 
 print(result)
