@@ -1,14 +1,28 @@
-from Run_Engine import RunAnalysis
-from Ticker_Attainment.get_sp500_tickers import get_sp500
-from Strat_Algos.SPY_Bench import bench_pull
-import numpy as np
+# AUTHOR: Andrew Antczak
+
+# DATE: May 8th, 2021
+
+# Background:
+# This code is the last code in the string of codes that allow backtests to take place.
+# This code actually calls the backtesting run and produces results, ultimately storing them in excel files, if desired.
+# The trading strategy, dates, tickers, and shorting activation are decided within this code.
+
+# Call Nature:
+# Locally.
+
 import os
+
+import numpy as np
 import pandas as pd
 import random
 import matplotlib.pyplot as plt
-
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
+
+from Run_Engine import RunAnalysis
+from Ticker_Attainment.get_sp500_tickers import get_sp500
+from Strat_Algos.SPY_Bench import bench_pull
+
 '''
 This code will run a backtest on any strategy input and produce the following statistical measures:
 
