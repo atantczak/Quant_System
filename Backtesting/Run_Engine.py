@@ -1,25 +1,32 @@
-# Andrew Antczak
-# March 29th, 2021
+# AUTHOR: Andrew Antczak
 
-'''
-This code runs the actual backtest and sends the trade results to Strategy_Analysis.py for statistical analysis.
-'''
+# DATE: May 8th, 2021
+
+# Background:
+# This code takes a dataframe generated in the preceding strategy algorithm and uses the time-series, signals, and
+# prices to generate portfolio returns, trade histories, and ultimately, statistical summaries for each strategy
+# over a pre-determined time-period and for a pre-determined set of equities.
+
+# Call Nature:
+# This code is called in the subsequent code, "Strategy_Analysis.py". The strategy of use, tickers, and desire to
+# include short trades are determined in the subsequent code.
+
+import os
+import time
+import warnings
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
+
+import numpy as np
+from datetime import datetime as dt
+import pandas as pd
+from pandas.core.common import SettingWithCopyWarning
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
 
 from Strat_Algos.MA_Deriv import ma_sig_gen
 from Strat_Algos.Bollinger_Bull import boll_zero_deriv, boll_f_inc_zero_deriv
 from Strat_Algos.Bollinger_Band import boll_band
 from Strat_Algos.RSI import rsi
-import numpy as np
-from datetime import datetime as dt
-import os
-import time
-import pandas as pd
-from pandas.core.common import SettingWithCopyWarning
-import warnings
-warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
-
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
 
 
 class RunAnalysis:
