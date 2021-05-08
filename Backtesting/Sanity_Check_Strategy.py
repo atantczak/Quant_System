@@ -1,9 +1,12 @@
-# Andrew Antczak
-# April 5th, 2021
+# AUTHOR: Andrew Antczak
 
-'''
-This code is to be utilized as a Sanity Check for any strategy.
-'''
+# DATE: April 5th, 2021
+
+# Background:
+# This code is to be utilized as a Sanity Check for any strategy.
+
+# Call Nature:
+# Locally
 
 import warnings
 from datetime import datetime as dt
@@ -11,16 +14,14 @@ from datetime import datetime as dt
 import numpy as np
 import pandas as pd
 from pandas.core.common import SettingWithCopyWarning
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
 
 from Strat_Algos.Bollinger_Bull import boll_zero_deriv, boll_f_inc_zero_deriv
 from Strat_Algos.Bollinger_Band import boll_band
 from Strat_Algos.MA_Deriv import ma_sig_gen
 from Strat_Algos.SPY_Bench import bench_pull
-
-warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
-
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
 
 
 class RunAnalysis:
