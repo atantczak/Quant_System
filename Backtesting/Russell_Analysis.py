@@ -1,13 +1,14 @@
-from Run_Engine import RunAnalysis
-from Ticker_Attainment.get_sp500_tickers import get_sp500
-from Strat_Algos.SPY_Bench import bench_pull
-import numpy as np
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
+# AUTHOR: Andrew Antczak
 
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
+# DATE: May 8th, 2021
+
+# Background:
+# This code is meant to run a full statistical analysis of the Russell rebalancing strategy.
+
+# Call Nature:
+# This code can be called directly within.
+
+
 '''
 This code will run a backtest on any strategy input and produce the following statistical measures:
 
@@ -22,8 +23,6 @@ This code will run a backtest on any strategy input and produce the following st
 9) Maxmium Drawdown
 10) Portfolio Return
 
-This code will NOT run a portfolio simulation in terms of overall returns.
-
 Overall returns are a bad assessment of backtest capability as they are heavily dependent upon market fluctuations
 during the time-period that they're run and therefore can easily dilute and/or hide the true impact/potential of any
 given strategy.
@@ -37,6 +36,14 @@ moving average length, bollinger length, std
 
 'Moving Average', ['Daily', '2017-02-13', '2018-02-26', ma_len, boll_len, 3]
 
+BOLLINGER BAND: "Bollinger Band": time-step ('Daily, 'Hourly', 'Minutely'), start_date, end_date, ma_len, boll_len, std
+
+'Bollinger Band', ['Daily', start_date, end_date, 100, 100, 4]
+
+
+RSI: "RSI": time-step('Daily', 'Hourly', 'Minutely'), start_date, end_date, window, strength
+
+'RSI', ['Daily', start_date, end_date, 14, 70]
 
 BOLLINGER BULL, RUSSELL APPLICATION INPUTS: "Bollinger Bull": year, start_date, ma_len, std
 
@@ -55,6 +62,19 @@ tickers = os.listdir('../../Data_Store/Russell_OHLCV_Data/{}/'.format(year)) # I
 tickers = [os.path.splitext(x)[0] for x in tickers] # If you're pulling tickers for Russell
 
 '''
+
+import os
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+
+from Run_Engine import RunAnalysis
+from Ticker_Attainment.get_sp500_tickers import get_sp500
+from Strat_Algos.SPY_Bench import bench_pull
+
 
 stat_df = pd.DataFrame(columns=['Expected Value', 'Win Rate', 'Avg. Win', 'Avg. Loss', 'Sharpe', 'Calmar', 'Portfolio Return',
                       'Max Drawdown', 'Avg. Hold Time', 'SPY Return', 'Benchmark Expected Value', 'Benchmark Win Rate',
