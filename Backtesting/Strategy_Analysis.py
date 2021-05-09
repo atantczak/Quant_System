@@ -64,6 +64,10 @@ RSI: "RSI": time-step('Daily', 'Hourly', 'Minutely'), start_date, end_date, wind
 
 'RSI', ['Daily', start_date, end_date, 14, 70]
 
+MACD: "MACD": time-step('Daily', 'Hourly', 'Minutely'), start_date, end_date, period_1, period_2, period_signal, smoothing
+
+'MACD', ['Daily', 'start_date', end_date, 12, 26, 9, 2]
+
 
 BOLLINGER BULL, RUSSELL APPLICATION INPUTS: "Bollinger Bull": year, start_date, ma_len, std
 
@@ -89,9 +93,9 @@ tickers = [os.path.splitext(x)[0] for x in tickers]
 
 '''
 
-tickers = ['AMZN', 'MMC', 'AAPL', 'PFE', 'TGT']
+tickers = get_sp500(250)
 
-start_date = '2000-01-01'
+start_date = '2015-01-01'
 end_date = '2021-04-01'
 
 stat_df = pd.DataFrame(columns=['Expected Value', 'Win Rate', 'Avg. Win', 'Avg. Loss', 'Sharpe', 'Calmar', 'Portfolio Return',
@@ -102,7 +106,7 @@ main_df = pd.DataFrame()
 
 first = True
 
-ra = RunAnalysis(tickers, 'RSI', ['Daily', start_date, end_date, 5, 90], False)
+ra = RunAnalysis(tickers, 'MACD', ['Daily', start_date, end_date, 12, 26, 9, 2], False)
 data, trades, hold_times = ra.run_sim()
 
 exp_val = np.mean(trades)

@@ -1,96 +1,127 @@
-# Andrew Antczak
-# March 29th, 2021
+# AUTHOR: Andrew Antczak
 
-'''
-This code will recieve input from 'Strategy_Analysis.py' and will produce signals as output to 'Strategy_Analysis.py'.
+# DATE: May 8th, 2021
 
-'''
+# Background:
+# This code is building the dataframe that will contain macd buy/sell signals.
+
+import os
+import datetime as dt
+import time
 
 import pandas as pd
 import numpy as np
+import pickle
+
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
 
 
-class MacdSignalProduction:
-    def __init__(self):
+def macd(tickers, input_list):
 
-        self.buy_search = {}
-        self.buy_act = {}
-        # Indicators
-        self.macd = {}
-        self.macd_sig = {}
-        self.ema_short = {}
-        self.ema_long = {}
-        self.ema_signal = {}
-        self.ema = {}
+    main_df = pd.DataFrame()
+    failed_tickers = []
 
-        self.macd_sig_c = {}
-        self.macd_hist = {}
+    for ticker in tickers:
+        time_step = input_list[0]
+        start_date = input_list[1]
+        end_date = input_list[2]
+        period_1 = input_list[3]
+        period_2 = input_list[4]
+        period_signal = input_list[5]
+        smoothing = input_list[6]
 
-    def signal_line(self, macd_sig, ticker):
-        k = 2.0 / (9 + 1)
-        if len(macd_sig) == 9:
-            self.ema_signal["{}".format(ticker)] = np.sum(macd_sig) / 9.0
-        elif len(macd_sig) > 9:
-            self.ema_signal["{}".format(ticker)] = self.macd["{}".format(ticker)] * k + self.ema_signal[
-                "{}".format(ticker)] * (1 - k)
+        data = pd.DataFrame()
+        today = time.mktime(dt.datetime.strptime(start_date, "%Y-%m-%d").timetuple())
+        s_today = str(dt.datetime.fromtimestamp(today))[0:10]
+        end_date_reached = False
+        c = 0
+
+        if time_step == 'Daily':
+            # if os.path.exists('../../Data_Store/Daily_SP500_Price_Data/{}.pk'.format(ticker)):
+            if os.path.exists('../../Data_Store/Yah_Daily_Prices/Daily_Price_Data/{}.pk'.format(ticker)):
+                # filename = '../../Data_Store/Daily_SP500_Price_Data/{}.pk'.format(ticker)
+                filename = '../../Data_Store/Yah_Daily_Prices/Daily_Price_Data/{}.pk'.format(ticker)
+                with open(filename, 'rb') as file:
+                    # Change Index to timestamp for original Polygon Data
+                    # Change Index to Date for Yah Finance Data
+                    data = pd.DataFrame(pickle.load(file)).set_index('Date', drop=True)
+            else:
+                failed_tickers.append(ticker)
+                continue
+
+            data = data.loc[start_date:end_date]
         else:
-            self.ema_signal["{}".format(ticker)] = np.nan
-        return
+            while end_date_reached is False:
 
-    def short_ema(self, i, close_prices, price, ticker):
-        k = 2.0 / (12 + 1)
-        if i == 12:
-            self.ema_short["{}".format(ticker)] = np.sum(close_prices) / 9.0
-        elif i > 12:
-            self.ema_short["{}".format(ticker)] = price * k + self.ema_short["{}".format(ticker)] * (1 - k)
+                today = s_today
+                today = time.mktime(dt.datetime.strptime(today, "%Y-%m-%d").timetuple())
+
+                if c == 0:
+                    c += 1
+                    if os.path.exists('../../Data_Store/{}_SP500_Price_Data/{}_{}.pk'.format(time_step, ticker, s_today)):
+                        filename = '../../Data_Store/{}_SP500_Price_Data/{}_{}.pk'.format(time_step, ticker, s_today)
+                        with open(filename, 'rb') as file:
+                            data = pd.DataFrame(pickle.load(file)).set_index('timestamp', drop=True)
+                    else:
+                        data = pd.DataFrame()
+                else:
+                    if os.path.exists('../../Data_Store/{}_SP500_Price_Data/{}_{}.pk'.format(time_step, ticker, s_today)):
+                        filename = '../../Data_Store/{}_SP500_Price_Data/{}_{}.pk'.format(time_step, ticker, s_today)
+                        with open(filename, 'rb') as file:
+                            df = pd.DataFrame(pickle.load(file)).set_index('timestamp', drop=True)
+                    else:
+                        df = pd.DataFrame()
+
+                    frames = [data, df]
+                    data = pd.concat(frames)
+
+                s_today = str(dt.datetime.fromtimestamp(today) + dt.timedelta(days=1))[0:10]
+                if s_today == end_date:
+                    end_date_reached = True
+                else:
+                    continue
+
+        data = data.fillna(0)
+        multiplier = {}
+
+        for period in [period_1, period_2]:
+            multiplier["{}".format(period)] = float(smoothing / (1 + period))
+            data['sma_{}'.format(period)] = data['Adj Close'].rolling(window=period).mean()
+            data['ema_{}'.format(period)] = [
+                data['Adj Close'][i] * multiplier["{}".format(period)] + data['sma_{}'.format(period)][i - 1] * (
+                            1 - multiplier["{}".format(period)]) for i in range(0, len(data))]
+            data['ema_{}'.format(period)] = [
+                data['Adj Close'][i] * multiplier["{}".format(period)] + data['ema_{}'.format(period)][i - 1] * (
+                            1 - multiplier["{}".format(period)]) for i in range(0, len(data))]
+
+        data['MACD'] = data['ema_{}'.format(period_1)] - data['ema_{}'.format(period_2)]
+        sig_multiplier = float(smoothing / (1 + period_signal))
+        data['sma_MACD'] = data['MACD'].rolling(window=period).mean()
+        data['signal_line'] = [data['MACD'][i] * sig_multiplier + data['sma_MACD'][i] * (1 - sig_multiplier) for i in
+                               range(0, len(data))]
+        data['signal_line'] = [data['MACD'][i] * sig_multiplier + data['signal_line'][i - 1] * (1 - sig_multiplier) for
+                               i in range(0, len(data))]
+
+        macd = []
+        for i, element in enumerate(data['MACD']):
+            if data['MACD'][i] > data['signal_line'][i] and data['MACD'][i-1] < data['signal_line'][i-1]:
+                macd.append(-1)
+            elif data['MACD'][i] < data['signal_line'][i] and data['MACD'][i-1] > data['signal_line'][i-1]:
+                macd.append(1)
+            else:
+                macd.append(0)
+
+        data['Signal'] = macd
+        data = data.rename(columns={'Close': '{} close'.format(ticker)})
+        data = data.rename(columns={'Signal': '{} signal'.format(ticker)})
+
+        data.drop(['Open', 'High', 'Low', 'Volume', 'Adj Close', 'ema_{}'.format(period_1), 'ema_{}'.format(period_2),
+                   'signal_line', 'MACD', 'sma_MACD', 'sma_{}'.format(period_1), 'sma_{}'.format(period_2)], 1, inplace=True)
+
+        if main_df.empty:
+            main_df = data
         else:
-            self.ema_short["{}".format(ticker)] = np.nan
-        return
+            main_df = main_df.join(data, how='outer')
 
-    def long_ema(self, i, close_prices, price, ticker):
-        k = 2.0 / (26 + 1)
-        if i == 26:
-            self.ema_long["{}".format(ticker)] = np.sum(close_prices) / 26.0
-        elif i > 26:
-            self.ema_long["{}".format(ticker)] = price * k + self.ema_long["{}".format(ticker)] * (1 - k)
-        else:
-            self.ema_long["{}".format(ticker)] = np.nan
-        return
-
-    def macd_calc(self, ticker):
-        self.macd["{}".format(ticker)] = self.ema_short["{}".format(ticker)] - self.ema_long["{}".format(ticker)]
-        return
-
-    def macd_hist_zero(self, i, close_prices, price, macd_sig, s, ticker):
-        self.short_ema(i, close_prices, price, ticker)
-        self.long_ema(i, close_prices, price, ticker)
-        self.macd_calc(ticker)
-        self.signal_line(macd_sig, ticker)
-        self.macd_sig_c["{}".format(ticker)] = self.ema_signal["{}".format(ticker)]
-        self.macd_hist["{}_{}".format(i, ticker)] = self.macd["{}".format(ticker)] - self.macd_sig_c["{}".format(ticker)]
-        try:
-            del self.macd_hist["{}_{}".format(i - 3, ticker)]
-        except:
-            pass
-
-        try:
-            hist_o = self.macd["{}".format(ticker)] - self.macd_sig_c["{}".format(ticker)]
-            hist_t = self.macd_hist["{}_{}".format(i - 1, ticker)]
-            hist_th = self.macd_hist["{}_{}".format(i - 2, ticker)]
-        except:
-            hist_o = 0.0
-            hist_t = 0.0
-            hist_th = 0.0
-
-        if s == 1:
-            if self.macd["{}".format(ticker)] > self.macd_sig_c["{}".format(ticker)]:
-                s = 0
-
-        if s == 0:
-            if self.macd["{}".format(ticker)] < self.macd_sig_c["{}".format(ticker)]:
-                self.buy_search["{}".format(ticker)] = True
-
-            if hist_th < hist_t < hist_o and self.buy_search["{}".format(ticker)] is True and self.macd["{}".format(ticker)] <= 0.0:
-                self.buy_act["{}".format(ticker)] = True
-
-        return s
+    return main_df, failed_tickers

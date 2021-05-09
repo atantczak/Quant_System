@@ -14,12 +14,12 @@
 import os
 import time
 import warnings
-warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
 import numpy as np
 from datetime import datetime as dt
 import pandas as pd
 from pandas.core.common import SettingWithCopyWarning
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
@@ -27,6 +27,7 @@ from Strat_Algos.MA_Deriv import ma_sig_gen
 from Strat_Algos.Bollinger_Bull import boll_zero_deriv, boll_f_inc_zero_deriv
 from Strat_Algos.Bollinger_Band import boll_band
 from Strat_Algos.RSI import rsi
+from Strat_Algos.MACD import macd
 
 
 class RunAnalysis:
@@ -43,6 +44,8 @@ class RunAnalysis:
             self.call = boll_band
         elif self.strategy == 'RSI':
             self.call = rsi
+        elif self.strategy == 'MACD':
+            self.call = macd
 
         self.inputs = strat_inputs
 
@@ -55,6 +58,7 @@ class RunAnalysis:
 
     def run_sim(self):
         data, failed_tickers = self.call(self.tickers, self.inputs)
+
         for ticker in failed_tickers:
             if ticker in self.tickers:
                 self.tickers.remove(ticker)
