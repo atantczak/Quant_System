@@ -21,6 +21,8 @@ pd.set_option('display.max_columns', None)
 from Strat_Algos.Bollinger_Bull import boll_zero_deriv, boll_f_inc_zero_deriv
 from Strat_Algos.Bollinger_Band import boll_band
 from Strat_Algos.MA_Deriv import ma_sig_gen
+from Strat_Algos.RSI import rsi
+from Strat_Algos.MACD import macd
 from Strat_Algos.SPY_Bench import bench_pull
 
 
@@ -32,8 +34,14 @@ class RunAnalysis:
             self.call = ma_sig_gen
         elif self.strategy == 'Bollinger Bull':
             self.call = boll_zero_deriv
+        elif self.strategy == 'Bollinger Force Increase Bull':
+            self.call = boll_f_inc_zero_deriv
         elif self.strategy == 'Bollinger Band':
             self.call = boll_band
+        elif self.strategy == 'RSI':
+            self.call = rsi
+        elif self.strategy == 'MACD':
+            self.call = macd
 
         self.inputs = strat_inputs
 
@@ -161,10 +169,10 @@ class RunAnalysis:
         return data, trades, hold_times
 
 
-tickers = ['AAPL', 'TSLA']
+tickers = ['AAPL']
 
-start_date = '2020-01-01'
-end_date = '2020-06-01'
+start_date = '2000-01-01'
+end_date = '2021-04-29'
 
 stat_df = pd.DataFrame(columns=['Expected Value', 'Win Rate', 'Avg. Win', 'Avg. Loss', 'Sharpe', 'Calmar', 'Portfolio Return',
                       'Max Drawdown', 'Avg. Hold Time', 'SPY Return', 'Benchmark Expected Value', 'Benchmark Win Rate',
@@ -174,7 +182,7 @@ main_df = pd.DataFrame()
 
 first = True
 
-ra = RunAnalysis(tickers, 'Bollinger Band', ['Daily', start_date, end_date, 5, 5, 1], True)
+ra = RunAnalysis(tickers, 'MACD', ['Daily', start_date, end_date, 12, 26, 9, 2], False)
 data, trades, hold_times = ra.run_sim()
 
 data = pd.DataFrame(data)
@@ -248,5 +256,5 @@ print("Benchmark Average Loss: {}%".format("%.2f" % bm_avg_loss))
 stat_df.loc[end_date] = [exp_val, win_rate, avg_win, avg_loss, sharpe, calmar_ratio, port_ret, max_drawdown, avg_hold,
                      spy_bench, bm_avg, bm_win_rate, bm_avg_win, bm_avg_loss]
 
-stat_df.to_excel('Sanity_Analysis.xlsx')
+#stat_df.to_excel('Sanity_Analysis.xlsx')
 

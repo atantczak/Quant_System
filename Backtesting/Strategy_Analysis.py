@@ -93,9 +93,9 @@ tickers = [os.path.splitext(x)[0] for x in tickers]
 
 '''
 
-tickers = get_sp500(250)
+tickers = ['AAPL', 'TSLA']
 
-start_date = '2015-01-01'
+start_date = '2020-01-01'
 end_date = '2021-04-01'
 
 stat_df = pd.DataFrame(columns=['Expected Value', 'Win Rate', 'Avg. Win', 'Avg. Loss', 'Sharpe', 'Calmar', 'Portfolio Return',

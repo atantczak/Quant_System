@@ -50,7 +50,6 @@ def macd(tickers, input_list):
                 failed_tickers.append(ticker)
                 continue
 
-            data = data.loc[start_date:end_date]
         else:
             while end_date_reached is False:
 
@@ -84,31 +83,55 @@ def macd(tickers, input_list):
 
         data = data.fillna(0)
         multiplier = {}
+        ema = {}
 
         for period in [period_1, period_2]:
             multiplier["{}".format(period)] = float(smoothing / (1 + period))
             data['sma_{}'.format(period)] = data['Adj Close'].rolling(window=period).mean()
-            data['ema_{}'.format(period)] = [
-                data['Adj Close'][i] * multiplier["{}".format(period)] + data['sma_{}'.format(period)][i - 1] * (
-                            1 - multiplier["{}".format(period)]) for i in range(0, len(data))]
-            data['ema_{}'.format(period)] = [
-                data['Adj Close'][i] * multiplier["{}".format(period)] + data['ema_{}'.format(period)][i - 1] * (
-                            1 - multiplier["{}".format(period)]) for i in range(0, len(data))]
+            place_holder = data['Adj Close'][period] * multiplier["{}".format(period)] + data['sma_{}'.format(period)][
+                period - 1] * (1 - multiplier["{}".format(period)])
+            ema["{}".format(period)] = []
+            for i in range(0, len(data)):
+                if i < period:
+                    ema["{}".format(period)].append(np.nan)
+                elif i == period:
+                    ema["{}".format(period)].append(
+                        data['Adj Close'][i] * multiplier["{}".format(period)] + place_holder * (
+                                    1 - multiplier["{}".format(period)]))
+                elif i > period:
+                    ema["{}".format(period)].append(
+                        data['Adj Close'][i] * multiplier["{}".format(period)] + ema["{}".format(period)][i - 1] * (
+                                    1 - multiplier["{}".format(period)]))
+                else:
+                    pass
+
+            data["ema_{}".format(period)] = ema["{}".format(period)]
 
         data['MACD'] = data['ema_{}'.format(period_1)] - data['ema_{}'.format(period_2)]
         sig_multiplier = float(smoothing / (1 + period_signal))
-        data['sma_MACD'] = data['MACD'].rolling(window=period).mean()
-        data['signal_line'] = [data['MACD'][i] * sig_multiplier + data['sma_MACD'][i] * (1 - sig_multiplier) for i in
-                               range(0, len(data))]
-        data['signal_line'] = [data['MACD'][i] * sig_multiplier + data['signal_line'][i - 1] * (1 - sig_multiplier) for
-                               i in range(0, len(data))]
+        data['sma_MACD'] = data['MACD'].rolling(window=period_signal).mean()
+        place_holder = data['MACD'][period_signal + period_2] * sig_multiplier + data['sma_MACD'][period_signal + period_2 - 1] * (1 - sig_multiplier)
+
+        sig_ema = []
+        for i in range(0, len(data)):
+            if i < (period_signal + period_2):
+                sig_ema.append(np.nan)
+            elif i == (period_signal + period_2):
+                sig_ema.append(data['MACD'][i] * sig_multiplier + place_holder * (1 - sig_multiplier))
+            elif i > (period_signal + period_2):
+                sig_ema.append(data['MACD'][i] * sig_multiplier + sig_ema[i - 1] * (1 - sig_multiplier))
+
+        data['signal_line'] = sig_ema
 
         macd = []
         for i, element in enumerate(data['MACD']):
+            if i == 0:
+                macd.append(0)
+                continue
             if data['MACD'][i] > data['signal_line'][i] and data['MACD'][i-1] < data['signal_line'][i-1]:
-                macd.append(-1)
-            elif data['MACD'][i] < data['signal_line'][i] and data['MACD'][i-1] > data['signal_line'][i-1]:
                 macd.append(1)
+            elif data['MACD'][i] < data['signal_line'][i] and data['MACD'][i-1] > data['signal_line'][i-1]:
+                macd.append(-1)
             else:
                 macd.append(0)
 
@@ -118,6 +141,8 @@ def macd(tickers, input_list):
 
         data.drop(['Open', 'High', 'Low', 'Volume', 'Adj Close', 'ema_{}'.format(period_1), 'ema_{}'.format(period_2),
                    'signal_line', 'MACD', 'sma_MACD', 'sma_{}'.format(period_1), 'sma_{}'.format(period_2)], 1, inplace=True)
+
+        data = data.loc[start_date:end_date] # We moved here due to line 113 and which index values are referenced.
 
         if main_df.empty:
             main_df = data
